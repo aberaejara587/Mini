@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="om">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Mini App - Ads & Rewards</title>
+    <script src="https://adsgram.ai/js/adsgram-ad-sdk.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 15px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #balanceDisplay { color: #0088cc; font-size: 24px; font-weight: bold; }
+        .ad-button { 
+            background-color: #28a745; color: white; border: none; 
+            padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 18px;
+        }
+        .ad-button:disabled { background-color: #ccc; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Baga Nagaan Dhufte!</h2>
+        <p id="balanceDisplay">Coins: Loading...</p>
+        <hr>
+        <p>Badhaasa argachuuf viidiyoo gabaabaa ilaali.</p>
+        <button id="rewardBtn" class="ad-button">Viidiyoo Ilaali (+50 Coins)</button>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
