@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getFirestore, doc, setDoc, increment, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
-// 1. Firebase Configuration (Ati kan naaf ergite)
+// 1. Firebase Configuration (Kee)
 const firebaseConfig = {
   apiKey: "AIzaSyANHzKz68wukTU_AsVaQrxKFxwknDM8SZs",
   authDomain: "telegram-mini-app-d338f.firebaseapp.com",
@@ -12,12 +12,11 @@ const firebaseConfig = {
   measurementId: "G-EYVNLHZHLV"
 };
 
-// Firebase & Firestore dhalshisuu
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 2. AdsGram Setup
-const ADSGRAM_BLOCK_ID = "YOUR_BLOCK_ID_HERE"; // Dashbord AdsGram irraa kan fudhatte as galchi
+// 2. AdsGram Setup (Block ID kee isa haaraa)
+const ADSGRAM_BLOCK_ID = "23303"; 
 const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
 
 // 3. Telegram User Info
@@ -28,7 +27,7 @@ const userId = tg.initDataUnsafe?.user?.id?.toString() || "test_user_001";
 const rewardBtn = document.getElementById('rewardBtn');
 const balanceDisplay = document.getElementById('balanceDisplay');
 
-// 4. Data Fayyadamaa Database Irraa Hordofuu (Live Update)
+// 4. Live Update: Database irraa qabxii hordofuu
 const userRef = doc(db, "users", userId);
 onSnapshot(userRef, (snapshot) => {
     if (snapshot.exists()) {
@@ -38,7 +37,7 @@ onSnapshot(userRef, (snapshot) => {
     }
 });
 
-// 5. Funshinii Beeksisa Agarsiisu
+// 5. Beeksisa Agarsiisuu
 async function handleAdClick() {
     try {
         rewardBtn.disabled = true;
@@ -47,21 +46,21 @@ async function handleAdClick() {
         const result = await adController.show();
 
         if (result.done) {
-            // Beeksisa xumureera -> Database Update
+            // Beeksisa xumureera -> Firebase Update
             await setDoc(userRef, {
                 userId: userId,
                 balance: increment(50),
-                totalAdsWatched: increment(1),
+                totalAds: increment(1),
                 lastUpdate: new Date()
             }, { merge: true });
 
-            tg.showAlert("Baay'ee gaariidha! 50 Coins argatteetta. ✅");
+            tg.showAlert("Baga gammadde! 50 Coins argatteetta. ✅");
         } else {
-            tg.showConfirm("Badhaasa argachuuf beeksisa xumuruu qabdu.");
+            tg.showAlert("Badhaasa argachuuf beeksisa xumuruu qabdu.");
         }
     } catch (error) {
-        console.error("Error:", error);
-        tg.showAlert("Beeksisa agarsiisuun hin danda'amne. Maaloo Ad-blocker cufi.");
+        console.error("AdsGram Error:", error);
+        tg.showAlert("Ammaaf beeksisni hin jiru ykn Ad-blocker jira.");
     } finally {
         rewardBtn.disabled = false;
         rewardBtn.innerText = "Viidiyoo Ilaali (+50 Coins)";
