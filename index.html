@@ -1,132 +1,58 @@
-<!DOCTYPE html>
-<html lang="om">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medals Bot - Rewards</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <script src="https://adsgram.ai/js/adsgram-ad-sdk.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getFirestore, doc, setDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
-    <style>
-        :root {
-            --primary: #0088cc;
-            --secondary: #28a745;
-            --bg: #f0f2f5;
-            --text: #333;
+const firebaseConfig = {
+  apiKey: "AIzaSyANHzKz68wukTU_AsVaQrxKFxwknDM8SZs",
+  authDomain: "telegram-mini-app-d338f.firebaseapp.com",
+  projectId: "telegram-mini-app-d338f",
+  storageBucket: "telegram-mini-app-d338f.firebasestorage.app",
+  messagingSenderId: "98666593238",
+  appId: "1:98666593238:web:38174f742f8a74913bc277"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const ADSGRAM_BLOCK_ID = "23303"; 
+const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+const userId = tg.initDataUnsafe?.user?.id?.toString() || "test_user";
+const balanceDisplay = document.getElementById('balanceDisplay');
+const rewardBtn = document.getElementById('rewardBtn');
+const userRef = doc(db, "users", userId);
+
+onSnapshot(userRef, async (snapshot) => {
+    if (snapshot.exists()) {
+        balanceDisplay.innerText = `${snapshot.data().balance || 0}`;
+    } else {
+        await setDoc(userRef, { userId: userId, balance: 0, createdAt: new Date() });
+        balanceDisplay.innerText = "0";
+    }
+});
+
+rewardBtn.addEventListener('click', async () => {
+    try {
+        rewardBtn.disabled = true;
+        const result = await adController.show();
+        if (result.done) {
+            await setDoc(userRef, { balance: increment(50) }, { merge: true });
+            tg.showAlert("Milkaa'eera! +50 Coins ✅");
         }
+    } catch (e) {
+        tg.showAlert("Beeksisni hin jiru.");
+    } finally {
+        rewardBtn.disabled = false;
+    }
+});
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            color: var(--text);
-        }
-
-        .container {
-            background: white;
-            width: 90%;
-            max-width: 400px;
-            padding: 30px;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-            border-top: 6px solid var(--primary);
-        }
-
-        .header h2 {
-            margin: 0;
-            font-size: 22px;
-            color: var(--primary);
-        }
-
-        .balance-card {
-            background: linear-gradient(135deg, #0088cc, #005f91);
-            color: white;
-            padding: 20px;
-            border-radius: 18px;
-            margin: 20px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .balance-card i { font-size: 30px; margin-bottom: 10px; }
-
-        #balanceDisplay {
-            font-size: 32px;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .description {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 25px;
-        }
-
-        .ad-button {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 16px;
-            border-radius: 14px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.3s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ad-button:active { transform: scale(0.98); }
-        .ad-button:disabled { background: #ccc; cursor: not-allowed; }
-
-        .footer-info {
-            margin-top: 15px;
-            font-size: 12px;
-            color: #aaa;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <div class="header">
-            <h2><i class="fa-solid fa-medal"></i> Medals Bot</h2>
-        </div>
-
-        <div class="balance-card">
-            <i class="fa-solid fa-coins"></i>
-            <p id="balanceDisplay">Loading...</p>
-            <span style="font-size: 12px; opacity: 0.8;">Qabxii Keessan</span>
-        </div>
-
-        <p class="description">
-            Baga nagaan dhufte! Badhaasa dabalataa argachuuf viidiyoo gabaabaa ilaali. 
-            Qabxiin kee yeruma sana herrega keetti dabalamama.
-        </p>
-
-        <button id="rewardBtn" class="ad-button">
-            <i class="fa-solid fa-play-circle"></i> 
-            <span>Viidiyoo Ilaali</span>
-        </button>
-
-        <div class="footer-info">
-            <i class="fa-solid fa-shield-halved"></i> 100% Amansiisaa dha
-        </div>
-    </div>
-
-    <script type="module" src="app.js"></script>
-</body>
-</html>
+const inviteBtn = document.getElementById('inviteBtn');
+if (inviteBtn) {
+    inviteBtn.addEventListener('click', () => {
+        const inviteLink = `https://t.me/Medals1_bot?start=${userId}`;
+        const shareText = "Maallaqa hojjechuuf koottaa!";
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`);
+    });
+}
