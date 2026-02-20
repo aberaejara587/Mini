@@ -14,51 +14,55 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// AdsGram Config
-const ADSGRAM_BLOCK_ID = "23303"; 
-const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+// AdsGram Setup (Debug mode on for testing)
+const adController = window.Adsgram.init({ 
+    blockId: "23303",
+    debug: true // Change to false when your bot is Active on Adsgram
+});
 
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-const userId = tg.initDataUnsafe?.user?.id?.toString() || "test_user_local";
+const userId = tg.initDataUnsafe?.user?.id?.toString() || "test_user";
 const balanceDisplay = document.getElementById('balanceDisplay');
 const rewardBtn = document.getElementById('rewardBtn');
-
 const userRef = doc(db, "users", userId);
 
-// Live Update
-onSnapshot(userRef, async (snapshot) => {
+// 1. Fetch Balance Live
+onSnapshot(userRef, (snapshot) => {
     if (snapshot.exists()) {
-        balanceDisplay.innerText = `${snapshot.data().balance || 0}`;
+        balanceDisplay.innerText = snapshot.data().balance || 0;
+        balanceDisplay.classList.remove('loading-pulse');
     } else {
-        await setDoc(userRef, { userId: userId, balance: 0, createdAt: new Date() });
+        setDoc(userRef, { balance: 0, createdAt: new Date() }, { merge: true });
         balanceDisplay.innerText = "0";
+        balanceDisplay.classList.remove('loading-pulse');
     }
-}, (err) => {
-    console.error("Firebase Error:", err);
-    balanceDisplay.innerText = "Check Rules!";
+}, (error) => {
+    console.error("Firebase Error:", error);
+    balanceDisplay.innerText = "Error";
 });
 
-// Play Ad Logic
+// 2. Watch Ad Logic
 rewardBtn.addEventListener('click', async () => {
     try {
         rewardBtn.disabled = true;
-        rewardBtn.innerText = "Loading Ad...";
+        rewardBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading Ad...';
         
         const result = await adController.show();
         
         if (result.done) {
             await setDoc(userRef, { balance: increment(50) }, { merge: true });
-            tg.showAlert("Milkaa'eera! +50 Coins ✅");
+            tg.showScanQrPopup({ text: "Milkaa'eera! +50 Coins ✅" }); // Fancy notification
+            setTimeout(() => tg.closeScanQrPopup(), 2000);
         } else {
-            tg.showAlert("Badhaasa argachuuf beeksisa xumuri.");
+            tg.showAlert("Qabxii argachuuf beeksisa xumuri.");
         }
     } catch (e) {
-        tg.showAlert("Beeksisni ammaaf hin jiru.");
+        tg.showAlert("Beeksisni ammaaf hin jiru. Maaloo muraasa eegi.");
     } finally {
         rewardBtn.disabled = false;
-        rewardBtn.innerText = "Watch Ad (+50)";
+        rewardBtn.innerHTML = '<i class="fa-solid fa-play-circle"></i> Watch Ad (+50 Coins)';
     }
 });
