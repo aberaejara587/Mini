@@ -12,59 +12,72 @@ const firebaseConfig = {
   measurementId: "G-EYVNLHZHLV"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 2. AdsGram Setup (Block ID kee isa haaraa)
+// 2. AdsGram Setup
 const ADSGRAM_BLOCK_ID = "23303"; 
 const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
 
-// 3. Telegram User Info
+// 3. Telegram User Information
 const tg = window.Telegram.WebApp;
 tg.ready();
-const userId = tg.initDataUnsafe?.user?.id?.toString() || "test_user_001";
+tg.expand();
 
-const rewardBtn = document.getElementById('rewardBtn');
+const userId = tg.initDataUnsafe?.user?.id?.toString() || "test_user_local";
+const userName = tg.initDataUnsafe?.user?.first_name || "Guest";
+
 const balanceDisplay = document.getElementById('balanceDisplay');
+const rewardBtn = document.getElementById('rewardBtn');
 
-// 4. Live Update: Database irraa qabxii hordofuu
+// 4. Live Update: Database Listener
 const userRef = doc(db, "users", userId);
-onSnapshot(userRef, (snapshot) => {
+
+onSnapshot(userRef, async (snapshot) => {
     if (snapshot.exists()) {
-        balanceDisplay.innerText = `Coins: ${snapshot.data().balance || 0}`;
+        balanceDisplay.innerText = `${snapshot.data().balance || 0}`;
     } else {
-        balanceDisplay.innerText = `Coins: 0`;
+        // Fayyadamaa haaraa galmeessuuf
+        await setDoc(userRef, {
+            userId: userId,
+            name: userName,
+            balance: 0,
+            createdAt: new Date()
+        });
+        balanceDisplay.innerText = "0";
     }
 });
 
-// 5. Beeksisa Agarsiisuu
+// 5. Reward Ad (Beeksisa)
 async function handleAdClick() {
     try {
         rewardBtn.disabled = true;
-        rewardBtn.innerText = "Beeksisi banamaa jira...";
-
         const result = await adController.show();
 
         if (result.done) {
-            // Beeksisa xumureera -> Firebase Update
             await setDoc(userRef, {
-                userId: userId,
                 balance: increment(50),
-                totalAds: increment(1),
-                lastUpdate: new Date()
+                lastAdDate: new Date()
             }, { merge: true });
-
-            tg.showAlert("Baga gammadde! 50 Coins argatteetta. ✅");
-        } else {
-            tg.showAlert("Badhaasa argachuuf beeksisa xumuruu qabdu.");
+            tg.showAlert("Milkaa'eera! 50 Coins dabalameera. ✅");
         }
     } catch (error) {
-        console.error("AdsGram Error:", error);
-        tg.showAlert("Ammaaf beeksisni hin jiru ykn Ad-blocker jira.");
+        tg.showAlert("Beeksisni ammaaf hin jiru.");
     } finally {
         rewardBtn.disabled = false;
-        rewardBtn.innerText = "Viidiyoo Ilaali (+50 Coins)";
     }
 }
 
 rewardBtn.addEventListener('click', handleAdClick);
+
+// 6. Invite Friend (Medals1_bot galfameera)
+const inviteBtn = document.getElementById('inviteBtn');
+if (inviteBtn) {
+    inviteBtn.addEventListener('click', () => {
+        const inviteLink = `https://t.me/Medals1_bot?start=${userId}`;
+        const shareText = "Kottaa walitti qabxii walitti qabnu! Appii kanaan beeksisa ilaaluun coins hojjedhu.";
+        const fullUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`;
+        tg.openTelegramLink(fullUrl);
+    });
+}
