@@ -1,58 +1,114 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getFirestore, doc, setDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="om">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medals Bot Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://adsgram.ai/js/adsgram-ad-sdk.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyANHzKz68wukTU_AsVaQrxKFxwknDM8SZs",
-  authDomain: "telegram-mini-app-d338f.firebaseapp.com",
-  projectId: "telegram-mini-app-d338f",
-  storageBucket: "telegram-mini-app-d338f.firebasestorage.app",
-  messagingSenderId: "98666593238",
-  appId: "1:98666593238:web:38174f742f8a74913bc277"
-};
+    <style>
+        :root { --primary: #0088cc; --secondary: #28a745; --bg: #f8f9fa; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+        
+        .header { background: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+        .active { display: block; }
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const ADSGRAM_BLOCK_ID = "23303"; 
-const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
-
-const tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
-
-const userId = tg.initDataUnsafe?.user?.id?.toString() || "test_user";
-const balanceDisplay = document.getElementById('balanceDisplay');
-const rewardBtn = document.getElementById('rewardBtn');
-const userRef = doc(db, "users", userId);
-
-onSnapshot(userRef, async (snapshot) => {
-    if (snapshot.exists()) {
-        balanceDisplay.innerText = `${snapshot.data().balance || 0}`;
-    } else {
-        await setDoc(userRef, { userId: userId, balance: 0, createdAt: new Date() });
-        balanceDisplay.innerText = "0";
-    }
-});
-
-rewardBtn.addEventListener('click', async () => {
-    try {
-        rewardBtn.disabled = true;
-        const result = await adController.show();
-        if (result.done) {
-            await setDoc(userRef, { balance: increment(50) }, { merge: true });
-            tg.showAlert("Milkaa'eera! +50 Coins ✅");
+        /* Wallet Card */
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary), #005f91);
+            color: white; padding: 25px; border-radius: 20px; text-align: center;
+            box-shadow: 0 8px 20px rgba(0,136,204,0.3);
         }
-    } catch (e) {
-        tg.showAlert("Beeksisni hin jiru.");
-    } finally {
-        rewardBtn.disabled = false;
-    }
-});
+        #balanceDisplay { font-size: 36px; font-weight: 700; margin: 10px 0; }
 
-const inviteBtn = document.getElementById('inviteBtn');
-if (inviteBtn) {
-    inviteBtn.addEventListener('click', () => {
-        const inviteLink = `https://t.me/Medals1_bot?start=${userId}`;
-        const shareText = "Maallaqa hojjechuuf koottaa!";
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`);
-    });
-}
+        /* Task & Invite List */
+        .list-item {
+            background: white; margin-top: 15px; padding: 15px; border-radius: 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .item-info { display: flex; align-items: center; gap: 15px; }
+        .item-icon { width: 45px; height: 45px; background: #eef7ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+
+        .btn-action { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+        .btn-ad { background: var(--secondary); width: 100%; padding: 15px; border-radius: 15px; color: white; border: none; font-size: 18px; font-weight: 600; margin-top: 20px; cursor: pointer; }
+
+        /* Navigation Bar */
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; background: white;
+            display: flex; justify-content: space-around; padding: 12px 0;
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.08);
+        }
+        .nav-item { border: none; background: none; color: #888; display: flex; flex-direction: column; align-items: center; font-size: 12px; cursor: pointer; transition: 0.3s; }
+        .nav-item.active-nav { color: var(--primary); font-weight: 600; }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="header"><strong>Medals Bot</strong></div>
+
+    <div id="home" class="page active">
+        <div class="balance-card">
+            <i class="fa-solid fa-wallet"></i>
+            <div id="balanceDisplay">Loading...</div>
+            <span>Current Balance (Coins)</span>
+        </div>
+        <button id="rewardBtn" class="btn-ad"><i class="fa-solid fa-play"></i> Watch Ad (+50)</button>
+        
+        <h3 style="margin-top: 30px;">Daily Tasks</h3>
+        <div class="list-item">
+            <div class="item-info">
+                <div class="item-icon"><i class="fa-brands fa-telegram"></i></div>
+                <div><strong>Join Channel</strong><br><small>+100 Coins</small></div>
+            </div>
+            <button class="btn-action">Go</button>
+        </div>
+    </div>
+
+    <div id="tasks" class="page">
+        <h3>All Tasks</h3>
+        <div class="list-item">
+            <div class="item-info">
+                <div class="item-icon"><i class="fa-brands fa-youtube"></i></div>
+                <div><strong>Subscribe YouTube</strong><br><small>+200 Coins</small></div>
+            </div>
+            <button class="btn-action">Check</button>
+        </div>
+    </div>
+
+    <div id="friends" class="page">
+        <div style="text-align: center; padding: 20px;">
+            <i class="fa-solid fa-users-viewfinder" style="font-size: 60px; color: var(--primary);"></i>
+            <h2>Invite Friends</h2>
+            <p>Earn 500 Coins for every friend you invite!</p>
+            <button class="btn-ad" id="inviteBtn" style="background: var(--primary);"><i class="fa-solid fa-share-nodes"></i> Share Link</button>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <button class="nav-item active-nav" onclick="showPage('home', this)"><i class="fa-solid fa-house"></i>Home</button>
+        <button class="nav-item" onclick="showPage('tasks', this)"><i class="fa-solid fa-list-check"></i>Tasks</button>
+        <button class="nav-item" onclick="showPage('friends', this)"><i class="fa-solid fa-user-plus"></i>Friends</button>
+    </div>
+
+    <script>
+        // Page Switching Logic
+        function showPage(pageId, element) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+            document.getElementById(pageId).classList.add('active');
+            element.classList.add('active-nav');
+        }
+    </script>
+    
+    <script type="module" src="app.js"></script>
+</body>
+</html>
